@@ -5,3 +5,7 @@ Language: **Serbian** <br>
 
 **Faculty of Mathematics, University of Belgrade** <br>
 **May 2023 - Today**
+
+# Testing
+
+Run the `init.py` script to download the food image dataset locally and create artifacts and datasets directories.
