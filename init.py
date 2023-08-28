@@ -63,6 +63,8 @@ def main():
         "artifacts/csv_logs",
         "artifacts/metrics",
         "artifacts/plots",
+        "artifacts/models",
+        "artifacts/model_summaries",
     ]
 
     create_directories(directories_to_create)
