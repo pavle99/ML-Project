@@ -63,7 +63,9 @@ pip install -r requirements.txt
 
 Then, run the `init.py` script to download the food image dataset locally and create the `datasets` directory used for training, validation and testing the ML models as well as the `artifacts` directory used for saving the ML models as well as the graphs of loss and accuracy as well as the confusion matrix.
 
-If you want to use pretrained models, download the uploaded artifact directory from [here](https://drive.google.com/file/d/1ySYOERs3l0AjD_z9YWQuKZHuGwZj6QXB/view) and replace it with the `artifacts` directory created by the `init.py` script.
+## Pretrained models
+
+If you want to use pretrained models, download the [uploaded artifact directory](https://drive.google.com/file/d/1ySYOERs3l0AjD_z9YWQuKZHuGwZj6QXB/view) and replace it with the `artifacts` directory created by the `init.py` script.
 
 # Project structure
 
