@@ -64,6 +64,7 @@ def main():
         "artifacts/metrics",
         "artifacts/plots",
         "artifacts/models",
+        "artifacts/model_histories",
         "artifacts/model_summaries",
     ]
 

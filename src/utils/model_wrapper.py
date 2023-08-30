@@ -1,4 +1,6 @@
-from typing import Callable, Union
+from typing import Callable, Literal
+
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28,7 +30,7 @@ class ModelWrapper:
 
         self.model: keras.models.Sequential
 
-        self.history: keras.callbacks.History
+        self.history: dict
         self.loss = 0.0
         self.accuracy = 0.0
 
@@ -61,7 +63,7 @@ class ModelWrapper:
             reduce_lr,
         ]
 
-    def train_and_save_model(
+    def train_and_save_model_and_history(
         self,
         epochs: int = 100,
         batch_size: int = 500,
@@ -69,7 +71,7 @@ class ModelWrapper:
     ):
         self.callbacks.extend(callbacks)
 
-        self.history = self.model.fit(
+        history = self.model.fit(
             self.preprocessing_utils.X_train,
             self.preprocessing_utils.y_train,
             validation_data=(self.preprocessing_utils.X_val, self.preprocessing_utils.y_val),
@@ -82,23 +84,49 @@ class ModelWrapper:
         self.model.save(f"{ARTIFACT_DIR}/models/{self.model_name}.h5")
         print("Model saved successfully!")
 
-    def load_model(self, model_path: Union[str, None] = None):
-        if model_path is None:
-            model_path = f"{ARTIFACT_DIR}/models/{self.model_name}.h5"
+        print(f'Saving history to "artifacts/model_histories/history_{self.model_name}"...')
+        with open(f"{ARTIFACT_DIR}/model_histories/history_{self.model_name}", "wb") as f:
+            pickle.dump(history.history, f)
+        print("History saved successfully!")
 
-        print(f'Loading model from "{model_path}"...')
-        model = keras.models.load_model(model_path)
-        if model is None:
-            print("Model not found!")
-            return
+    def __load_history_or_model(
+        self,
+        path: str = "",
+        history_or_model: Literal["history", "model"] = "history",
+    ):
+        if path == "":
+            path = (
+                f"{ARTIFACT_DIR}/model_histories/history_{self.model_name}"
+                if history_or_model == "history"
+                else f"{ARTIFACT_DIR}/models/{self.model_name}.h5"
+            )
 
-        self.model = model
-        print("Model loaded successfully!")
+        print(f'Loading {history_or_model} from "{path}"...')
+
+        model, history = None, None
+        if history_or_model == "history":
+            with open(path, "rb") as f:
+                history = pickle.load(f)
+        else:
+            model = keras.models.load_model(path)
+
+        if history_or_model == "history" and history is not None:
+            self.history = history
+        elif history_or_model == "model" and model is not None:
+            self.model = model
+        else:
+            raise Exception(f"Error loading {history_or_model} from {path}!")
+
+        print(f"{history_or_model.capitalize()} loaded successfully!")
+
+    def load_model_and_history(self, model_path: str = "", history_path: str = ""):
+        self.__load_history_or_model(model_path, "model")
+        self.__load_history_or_model(history_path, "history")
 
     def plot_accuracy(self):
-        plt.plot(self.history.history["accuracy"], label="train accuracy")
-        plt.plot(self.history.history["val_accuracy"], label="validation accuracy")
-        plt.title("Model accuracy")
+        plt.plot(self.history["accuracy"], label="train accuracy")
+        plt.plot(self.history["val_accuracy"], label="validation accuracy")
+        plt.title(f"{self.model_name} accuracy")
         plt.ylabel("Accuracy")
         plt.xlabel("Epoch")
         plt.legend(loc="best")
@@ -106,9 +134,9 @@ class ModelWrapper:
         plt.show()
 
     def plot_loss(self):
-        plt.plot(self.history.history["loss"], label="train loss")
-        plt.plot(self.history.history["val_loss"], label="validation loss")
-        plt.title("Model loss")
+        plt.plot(self.history["loss"], label="train loss")
+        plt.plot(self.history["val_loss"], label="validation loss")
+        plt.title(f"{self.model_name} loss")
         plt.ylabel("Loss")
         plt.xlabel("Epoch")
         plt.legend(loc="best")
@@ -130,6 +158,7 @@ class ModelWrapper:
         sns.set(font_scale=1.1)
         plt.figure(figsize=(15, 10))
         s = sns.heatmap(df_cm, annot=True, cmap=cmap)
+        plt.title(f"{self.model_name} confusion matrix")
         plt.ylabel("True label")
         plt.xlabel("Predicted label")
         plt.savefig(f"{ARTIFACT_DIR}/metrics/ConfusionMatrix_{self.model_name}.png")
