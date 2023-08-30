@@ -55,13 +55,15 @@ Detailed results and visual representations of these metrics can be found in the
 
 # Manual testing
 
-First, install the required packages by running the following command:
+First, use a tool for creating isolated environments such as [Anaconda](https://www.anaconda.com/) or venv to create a new environment and activate it. The Python version used in this project is **3.9.17**. Then, install the required packages by running the following command:
 
 ```bash
 pip install -r requirements.txt
 ```
 
 Then, run the `init.py` script to download the food image dataset locally and create the `datasets` directory used for training, validation and testing the ML models as well as the `artifacts` directory used for saving the ML models as well as the graphs of loss and accuracy as well as the confusion matrix.
+
+If you want to use pretrained models, download the uploaded artifact directory from [here](https://drive.google.com/file/d/1ySYOERs3l0AjD_z9YWQuKZHuGwZj6QXB/view) and replace it with the `artifacts` directory created by the `init.py` script.
 
 # Project structure
 
