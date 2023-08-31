@@ -10,12 +10,7 @@ RANDOM_SEED = 42
 
 DATASETS_DIR = "../../datasets"
 
-ROOT_IMG_DIR = f"{DATASETS_DIR}/images"
-
-ORIGINAL_IMG_DIR = f"{ROOT_IMG_DIR}/original"
-TRAIN_IMG_DIR = f"{ROOT_IMG_DIR}/train"
-TEST_IMG_DIR = f"{ROOT_IMG_DIR}/test"
-VAL_IMG_DIR = f"{ROOT_IMG_DIR}/val"
+IMG_DIR = f"{DATASETS_DIR}/images"
 
 NUMPY_DIR = f"{DATASETS_DIR}/numpy"
 
@@ -25,6 +20,7 @@ NUMPY_LABEL_DIR = f"{NUMPY_DIR}/labels.npy"
 
 class PreprocessingUtils:
     def __init__(self):
+        self.label_names: list[str] = os.listdir(IMG_DIR)
         self.images, self.labels, self.num_classes = self.__load_images_and_labels()
         self.labels = self.__preprocess_labels()
 
@@ -44,17 +40,17 @@ class PreprocessingUtils:
         else:
             print("Files don't exist, creating...")
 
-        categories = os.listdir(ORIGINAL_IMG_DIR)
+        categories = os.listdir(IMG_DIR)
 
         images = []
         labels = []
 
         for category in categories:
-            image_files = os.listdir(os.path.join(ORIGINAL_IMG_DIR, category))
+            image_files = os.listdir(os.path.join(IMG_DIR, category))
 
             for image_file in image_files:
                 img = keras.preprocessing.image.load_img(
-                    os.path.join(ORIGINAL_IMG_DIR, category, image_file), target_size=(256, 256)
+                    os.path.join(IMG_DIR, category, image_file), target_size=(256, 256)
                 )
                 img = keras.preprocessing.image.img_to_array(img)
                 img = img / 255.0

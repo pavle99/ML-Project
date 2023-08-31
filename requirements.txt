@@ -87,6 +87,7 @@ termcolor==2.3.0
 threadpoolctl==3.2.0
 tifffile==2023.7.18
 tornado==6.2
+tqdm==4.66.1
 traitlets==5.9.0
 typing_extensions==4.7.1
 tzdata==2023.3
