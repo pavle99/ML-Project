@@ -30,7 +30,7 @@ def download_and_extract_dataset(url: str, target_folder: str):
                 bar.update(size)
 
         print("Extracting the dataset...")
-        with tarfile.open(fname, "r:gz" if os.name != "nt" else "r:") as tar:
+        with tarfile.open(fname, "r") as tar:
             tar.extractall(target_folder)
         return True
     except Exception as e:
@@ -80,7 +80,9 @@ def main():
 
     img_dir_path = "datasets/images"
     if not os.path.exists(img_dir_path) or not os.listdir(img_dir_path):
-        dataset_url = "http://aisdatasets.informatik.uni-freiburg.de/freiburg_groceries_dataset/freiburg_groceries_dataset.tar.gz"
+        dataset_url = (
+            "http://aisdatasets.informatik.uni-freiburg.de/freiburg_groceries_dataset/freiburg_groceries_dataset.tar.gz"
+        )
         resp = download_and_extract_dataset(dataset_url, "datasets/images")
         if resp:
             resp = move_images_to_img_dir(img_dir_path)
