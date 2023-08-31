@@ -67,7 +67,7 @@ Then, run the `init.py` script to download the food image dataset locally and cr
 
 ## Pretrained models
 
-If you want to use pretrained models, download the [uploaded artifact directory](https://drive.google.com/file/d/1ySYOERs3l0AjD_z9YWQuKZHuGwZj6QXB/view), unzip it and replace it with the `artifacts` directory created by the `init.py` script.
+If you want to use pretrained models, download the [uploaded artifact directory](https://drive.google.com/file/d/1diNwGU7jPgIcV9Y-lKBxIBDlmkPqIxfJ/view), unzip it and replace it with the `artifacts` directory created by the `init.py` script.
 
 # Project structure
 
