@@ -15,6 +15,8 @@ Participants:
 ## Overview
 In this project, we used deep learning architectures from the [research paper](http://cs231n.stanford.edu/reports/2017/pdfs/607.pdf) written in the project specification, alongside a custom-built model to sort out different food images through classification. The aim was to compare the efficiencies of these models and discern the potential of tailored solutions in machine learning tasks.
 
+The project was developed on **Windows 11** operating system using **Python 3.9.17**. 
+
 ## Dataset
 We used the [Freiburg Groceries Dataset](http://aisdatasets.informatik.uni-freiburg.de/freiburg_groceries_dataset) which covers an assortment of food items across various categories. In contrast to existing groceries datasets, dataset includes a large variety of perspectives, lighting conditions, and degrees of clutter. The dataset was divided into training, validation, and testing segments to ensure comprehensive model evaluation.
 
@@ -55,13 +57,13 @@ Detailed results and visual representations of these metrics can be found in the
 
 # Manual testing
 
-First, use a tool for creating isolated environments such as [Anaconda](https://www.anaconda.com/) or venv to create a new environment and activate it. The Python version used in this project is **3.9.17**. Then, install the required packages by running the following command:
+First, use a tool for creating isolated environments such as [Anaconda](https://www.anaconda.com/) or venv to create a new environment and then activate it. Then, install the required packages by running the following command:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Then, run the `init.py` script to download the food image dataset locally and create the `datasets` directory used for training, validation and testing the ML models as well as the `artifacts` directory used for saving the ML models as well as the graphs of loss and accuracy as well as the confusion matrix.
+Then, run the `init.py` script to download the food image dataset locally and create the `datasets` directory used for training, validation and testing the ML models as well as the `artifacts` directory used for saving various data about the ML models such as the models themselves, their weights, the graphs of loss and accuracy as well as the confusion matrix.
 
 ## Pretrained models
 

@@ -39,7 +39,9 @@ class ModelWrapper:
         self.model = build_fn(**kwargs)
         print("Model built successfully!")
 
-        print(f"Saving model summary to {ARTIFACT_DIR}/model_summaries/summary_{self.model_name}...")
+        print(
+            f"Saving model summary to {ARTIFACT_DIR}/model_summaries/summary_{self.model_name}..."
+        )
         keras.utils.plot_model(
             self.model,
             to_file=f"{ARTIFACT_DIR}/model_summaries/summary_{self.model_name}.png",
@@ -51,9 +53,13 @@ class ModelWrapper:
     def init_callbacks(self):
         early_stopping = keras.callbacks.EarlyStopping(monitor="val_loss", patience=30)
         checkpointer = keras.callbacks.ModelCheckpoint(
-            filepath=f"{ARTIFACT_DIR}/checkpoints/checkpoint_{self.model_name}", verbose=1, save_best_only=True
+            filepath=f"{ARTIFACT_DIR}/checkpoints/checkpoint_{self.model_name}",
+            verbose=1,
+            save_best_only=True,
         )
-        csv_logger = keras.callbacks.CSVLogger(f"{ARTIFACT_DIR}/csv_logs/history_{self.model_name}.log")
+        csv_logger = keras.callbacks.CSVLogger(
+            f"{ARTIFACT_DIR}/csv_logs/history_{self.model_name}.log"
+        )
         reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=3, min_lr=1e-6)  # type: ignore
 
         return [
@@ -74,7 +80,10 @@ class ModelWrapper:
         history = self.model.fit(
             self.preprocessing_utils.X_train,
             self.preprocessing_utils.y_train,
-            validation_data=(self.preprocessing_utils.X_val, self.preprocessing_utils.y_val),
+            validation_data=(
+                self.preprocessing_utils.X_val,
+                self.preprocessing_utils.y_val,
+            ),
             epochs=epochs,
             batch_size=batch_size,
             callbacks=self.callbacks,
@@ -84,8 +93,12 @@ class ModelWrapper:
         self.model.save(f"{ARTIFACT_DIR}/models/{self.model_name}.h5")
         print("Model saved successfully!")
 
-        print(f'Saving history to "artifacts/model_histories/history_{self.model_name}"...')
-        with open(f"{ARTIFACT_DIR}/model_histories/history_{self.model_name}", "wb") as f:
+        print(
+            f'Saving history to "artifacts/model_histories/history_{self.model_name}"...'
+        )
+        with open(
+            f"{ARTIFACT_DIR}/model_histories/history_{self.model_name}", "wb"
+        ) as f:
             pickle.dump(history.history, f)
         print("History saved successfully!")
 
@@ -144,7 +157,9 @@ class ModelWrapper:
         plt.show()
 
     def __display_loss_and_accuracy(self):
-        self.loss, self.accuracy = self.model.evaluate(self.preprocessing_utils.X_test, self.preprocessing_utils.y_test)
+        self.loss, self.accuracy = self.model.evaluate(
+            self.preprocessing_utils.X_test, self.preprocessing_utils.y_test
+        )
 
         print(f"Loss: {self.loss:.4f}")
         print(f"Accuracy: {self.accuracy:.4f}")
@@ -171,6 +186,65 @@ class ModelWrapper:
         y_pred_classes = np.argmax(y_pred, axis=1)
         y_true = np.argmax(self.preprocessing_utils.y_test, axis=1)
 
-        print(f"Classification Report:\n{metrics.classification_report(y_true, y_pred_classes)}")
+        print(
+            f"Classification Report:\n{metrics.classification_report(y_true, y_pred_classes)}"
+        )
 
         self.__display_confusion_matrix(y_pred_classes, y_true)
+
+    def __predict_image_label(self, image_array: np.ndarray):
+        img_processed = np.expand_dims(image_array.copy(), axis=0)
+
+        prediction = self.model.predict(img_processed)
+
+        index = np.argmax(prediction)
+        confidence = prediction[0][index]
+
+        prediction_label = self.preprocessing_utils.label_names[index]
+
+        return prediction_label, confidence
+
+    def display_random_image_prediction(self):
+        idx = np.random.randint(len(self.preprocessing_utils.X_test))
+
+        img_array = self.preprocessing_utils.X_test[idx]
+        true_label = self.preprocessing_utils.label_names[
+            np.argmax(self.preprocessing_utils.y_test[idx])
+        ]
+
+        prediction_label, confidence = self.__predict_image_label(img_array)
+
+        plt.title(
+            f"True label - {true_label}\nPredicted label - {prediction_label}\nConfidence - {confidence:.4f}"
+        )
+        plt.imshow(img_array)
+
+    def display_all_image_predictions_for_label(self, label_name: str, limit: int = 5):
+        label_index = self.preprocessing_utils.label_names.index(label_name)
+
+        one_hot_label = np.zeros_like(self.preprocessing_utils.y_test[0])
+        one_hot_label[label_index] = 1
+
+        filtered_images = [
+            img
+            for idx, img in enumerate(self.preprocessing_utils.X_test)
+            if np.array_equal(self.preprocessing_utils.y_test[idx], one_hot_label)
+        ]
+
+        fig, axes = plt.subplots(limit, limit, figsize=(15, 15))
+
+        for i, ax in enumerate(axes.ravel()):
+            if i < len(filtered_images):
+                prediction_label, confidence = self.__predict_image_label(
+                    filtered_images[i]
+                )
+
+                ax.imshow(filtered_images[i])
+                ax.set_title(
+                    f"True: {label_name}\nPredicted: {prediction_label}\nConfidence: {confidence:.4f}",
+                    fontsize=10,
+                )
+                ax.axis("off")
+
+        plt.subplots_adjust(hspace=0.5)
+        plt.show()

@@ -10,18 +10,20 @@ RANDOM_SEED = 42
 
 DATASETS_DIR = "../../datasets"
 
-IMG_DIR = f"{DATASETS_DIR}/images"
+IMAGES_DIR = f"{DATASETS_DIR}/images"
 
 NUMPY_DIR = f"{DATASETS_DIR}/numpy"
 
-NUMPY_IMG_DIR = f"{NUMPY_DIR}/images.npy"
-NUMPY_LABEL_DIR = f"{NUMPY_DIR}/labels.npy"
+NUMPY_IMAGES_DIR = f"{NUMPY_DIR}/images"
+NUMPY_LABELS_DIR = f"{NUMPY_DIR}/labels"
 
 
 class PreprocessingUtils:
-    def __init__(self):
-        self.label_names: list[str] = os.listdir(IMG_DIR)
-        self.images, self.labels, self.num_classes = self.__load_images_and_labels()
+    def __init__(self, force_split: bool = False):
+        self.label_names: list[str] = os.listdir(IMAGES_DIR)
+        self.num_classes = len(self.label_names)
+
+        self.images, self.labels = self.__load_images_and_labels()
         self.labels = self.__preprocess_labels()
 
         (
@@ -31,26 +33,27 @@ class PreprocessingUtils:
             self.y_train,
             self.y_test,
             self.y_val,
-        ) = self.__train_test_val_split()
+        ) = (
+            self.__train_test_val_split() if force_split else self.__load_split_data()
+        )
 
     def __preprocess_and_save_images(self):
-        if os.path.exists(NUMPY_IMG_DIR) and os.path.exists(NUMPY_LABEL_DIR):
+        if os.path.exists(f"{NUMPY_IMAGES_DIR}/all.npy") and os.path.exists(f"{NUMPY_LABELS_DIR}/all.npy"):
             print("Files already exist, skipping...")
             return
         else:
             print("Files don't exist, creating...")
 
-        categories = os.listdir(IMG_DIR)
-
         images = []
         labels = []
 
-        for category in categories:
-            image_files = os.listdir(os.path.join(IMG_DIR, category))
+        for category in self.label_names:
+            image_files = os.listdir(os.path.join(IMAGES_DIR, category))
 
             for image_file in image_files:
                 img = keras.preprocessing.image.load_img(
-                    os.path.join(IMG_DIR, category, image_file), target_size=(256, 256)
+                    os.path.join(IMAGES_DIR, category, image_file),
+                    target_size=(256, 256),
                 )
                 img = keras.preprocessing.image.img_to_array(img)
                 img = img / 255.0
@@ -58,22 +61,20 @@ class PreprocessingUtils:
                 images.append(img)
                 labels.append(category)
 
-        np.save(NUMPY_IMG_DIR, np.array(images))
-        np.save(NUMPY_LABEL_DIR, np.array(labels))
+        np.save(f"{NUMPY_IMAGES_DIR}/all.npy", np.array(images))
+        np.save(f"{NUMPY_LABELS_DIR}/all.npy", np.array(labels))
 
         print("Images transformed and saved successfully!")
 
-    def __load_images_and_labels(self) -> tuple[np.ndarray, np.ndarray, int]:
+    def __load_images_and_labels(self) -> tuple[np.ndarray, np.ndarray]:
         self.__preprocess_and_save_images()
 
         print("Loading images and labels...")
-        images = np.load(NUMPY_IMG_DIR)
-        labels = np.load(NUMPY_LABEL_DIR)
+        images = np.load(f"{NUMPY_IMAGES_DIR}/all.npy")
+        labels = np.load(f"{NUMPY_LABELS_DIR}/all.npy")
         print("Images and labels loaded successfully!")
 
-        num_classes = len(np.unique(labels))
-
-        return images, labels, num_classes
+        return images, labels
 
     def __preprocess_labels(self):
         print("Preprocessing labels...")
@@ -85,6 +86,30 @@ class PreprocessingUtils:
         print("Labels preprocessed successfully!")
 
         return labels
+
+    def __load_split_data(
+        self,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        if not all(
+            [
+                os.path.exists(f"{NUMPY_IMAGES_DIR}/{split}.npy") and os.path.exists(f"{NUMPY_LABELS_DIR}/{split}.npy")
+                for split in ["train", "test", "val"]
+            ]
+        ):
+            print("Files don't exist, splitting...")
+            return self.__train_test_val_split()
+
+        print("Loading split data...")
+        X_train = np.load(f"{NUMPY_IMAGES_DIR}/train.npy")
+        X_test = np.load(f"{NUMPY_IMAGES_DIR}/test.npy")
+        X_val = np.load(f"{NUMPY_IMAGES_DIR}/val.npy")
+
+        y_train = np.load(f"{NUMPY_LABELS_DIR}/train.npy")
+        y_test = np.load(f"{NUMPY_LABELS_DIR}/test.npy")
+        y_val = np.load(f"{NUMPY_LABELS_DIR}/val.npy")
+        print("Split data loaded successfully!")
+
+        return X_train, X_test, X_val, y_train, y_test, y_val
 
     def __train_test_val_split(
         self, test_size: float = 1 / 8, val_size: float = 1 / 20
@@ -98,5 +123,15 @@ class PreprocessingUtils:
             X_train_val, y_train_val, test_size=val_size, random_state=RANDOM_SEED
         )
         print("Data split successfully!")
+
+        print("Saving split data...")
+        np.save(f"{NUMPY_IMAGES_DIR}/train.npy", X_train)
+        np.save(f"{NUMPY_IMAGES_DIR}/test.npy", X_test)
+        np.save(f"{NUMPY_IMAGES_DIR}/val.npy", X_val)
+
+        np.save(f"{NUMPY_LABELS_DIR}/train.npy", y_train)
+        np.save(f"{NUMPY_LABELS_DIR}/test.npy", y_test)
+        np.save(f"{NUMPY_LABELS_DIR}/val.npy", y_val)
+        print("Split data saved successfully!")
 
         return X_train, X_test, X_val, y_train, y_test, y_val
