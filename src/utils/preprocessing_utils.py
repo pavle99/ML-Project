@@ -19,7 +19,39 @@ NUMPY_LABELS_DIR = f"{NUMPY_DIR}/labels"
 
 
 class PreprocessingUtils:
+    """
+    Utility class for preprocessing and managing image datasets.
+
+    This class allows for the automated preprocessing of image datasets,
+    including image loading, resizing, normalization, and data splitting.
+
+    Attributes
+    ----------
+    label_names : list[str]
+        List of unique label names from the IMAGES_DIR directory.
+    num_classes : int
+        Total number of unique image classes or categories.
+    images : np.ndarray
+        Array of preprocessed images.
+    labels : np.ndarray
+        Array of preprocessed labels corresponding to the images.
+    X_train, X_test, X_val : np.ndarray
+        Datasets split for training, testing, and validation.
+    y_train, y_test, y_val : np.ndarray
+        Labels corresponding to the split datasets.
+    """
+
     def __init__(self, force_split: bool = False):
+        """
+        Initialize the PreprocessingUtils instance.
+
+        Parameters
+        ----------
+        force_split : bool, optional
+            If True, force a data split even if pre-split data exists.
+            Defaults to False.
+        """
+
         self.label_names: list[str] = os.listdir(IMAGES_DIR)
         self.num_classes = len(self.label_names)
 
@@ -38,9 +70,14 @@ class PreprocessingUtils:
         )
 
     def __preprocess_and_save_images(self):
-        if os.path.exists(f"{NUMPY_IMAGES_DIR}/all.npy") and os.path.exists(
-            f"{NUMPY_LABELS_DIR}/all.npy"
-        ):
+        """
+        Preprocess and save images to the specified directory.
+
+        If the images and labels already exist in the directory, skip the
+        preprocessing step.
+        """
+
+        if os.path.exists(f"{NUMPY_IMAGES_DIR}/all.npy") and os.path.exists(f"{NUMPY_LABELS_DIR}/all.npy"):
             print("Files already exist, skipping...")
             return
         else:
@@ -69,6 +106,15 @@ class PreprocessingUtils:
         print("Images transformed and saved successfully!")
 
     def __load_images_and_labels(self) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Load preprocessed images and labels from the storage.
+
+        Returns
+        -------
+        tuple : (np.ndarray, np.ndarray)
+            A tuple containing arrays of the loaded images and labels respectively.
+        """
+
         self.__preprocess_and_save_images()
 
         print("Loading images and labels...")
@@ -79,6 +125,15 @@ class PreprocessingUtils:
         return images, labels
 
     def __preprocess_labels(self):
+        """
+        Encode and preprocess labels to numerical format.
+
+        Returns
+        -------
+        np.ndarray :
+            Array of preprocessed labels.
+        """
+
         print("Preprocessing labels...")
         le = preprocessing.LabelEncoder()
 
@@ -92,10 +147,22 @@ class PreprocessingUtils:
     def __load_split_data(
         self,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Load split datasets (train, test, validation) from storage.
+
+        If the split datasets do not exist in the storage, perform the
+        splitting operation first.
+
+        Returns
+        -------
+        tuple : (np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
+            Arrays representing the train, test, and validation datasets and
+            their corresponding labels.
+        """
+
         if not all(
             [
-                os.path.exists(f"{NUMPY_IMAGES_DIR}/{split}.npy")
-                and os.path.exists(f"{NUMPY_LABELS_DIR}/{split}.npy")
+                os.path.exists(f"{NUMPY_IMAGES_DIR}/{split}.npy") and os.path.exists(f"{NUMPY_LABELS_DIR}/{split}.npy")
                 for split in ["train", "test", "val"]
             ]
         ):
@@ -117,6 +184,24 @@ class PreprocessingUtils:
     def __train_test_val_split(
         self, test_size: float = 1 / 8, val_size: float = 1 / 20
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Split the data into train, test, and validation sets, then save them
+        to the specified storage directory.
+
+        Parameters
+        ----------
+        test_size : float, optional
+            Fraction of the dataset to be used as the test set. Defaults to 1/8.
+        val_size : float, optional
+            Fraction of the dataset to be used as the validation set. Defaults to 1/20.
+
+        Returns
+        -------
+        tuple : (np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
+            Arrays representing the train, test, and validation datasets and
+            their corresponding labels.
+        """
+
         print("Splitting data into train, test and validation sets...")
         X_train_val, X_test, y_train_val, y_test = model_selection.train_test_split(
             self.images, self.labels, test_size=test_size, random_state=RANDOM_SEED
