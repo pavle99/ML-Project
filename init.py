@@ -74,6 +74,7 @@ def main():
         "artifacts/models",
         "artifacts/model_histories",
         "artifacts/model_summaries",
+        "artifacts/tuner_logs",
     ]
 
     create_directories(directories_to_create)

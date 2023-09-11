@@ -77,7 +77,9 @@ class PreprocessingUtils:
         preprocessing step.
         """
 
-        if os.path.exists(f"{NUMPY_IMAGES_DIR}/all.npy") and os.path.exists(f"{NUMPY_LABELS_DIR}/all.npy"):
+        if os.path.exists(f"{NUMPY_IMAGES_DIR}/all.npy") and os.path.exists(
+            f"{NUMPY_LABELS_DIR}/all.npy"
+        ):
             print("Files already exist, skipping...")
             return
         else:
@@ -162,7 +164,8 @@ class PreprocessingUtils:
 
         if not all(
             [
-                os.path.exists(f"{NUMPY_IMAGES_DIR}/{split}.npy") and os.path.exists(f"{NUMPY_LABELS_DIR}/{split}.npy")
+                os.path.exists(f"{NUMPY_IMAGES_DIR}/{split}.npy")
+                and os.path.exists(f"{NUMPY_LABELS_DIR}/{split}.npy")
                 for split in ["train", "test", "val"]
             ]
         ):

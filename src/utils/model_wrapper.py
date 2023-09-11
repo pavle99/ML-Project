@@ -1,5 +1,7 @@
 from typing import Callable, Literal
 
+import shutil
+
 import pickle
 
 import numpy as np
@@ -10,6 +12,7 @@ import pandas as pd
 from sklearn import metrics
 
 from tensorflow import keras
+from keras_tuner import tuners, RandomSearch
 
 import sys
 
@@ -113,6 +116,8 @@ class ModelWrapper:
 
         self.callbacks: list[keras.callbacks.Callback] = self.__init_callbacks()
 
+        self.tuner: RandomSearch
+
         self.model: keras.models.Sequential
 
         self.history: dict
@@ -121,7 +126,7 @@ class ModelWrapper:
 
     def build_model(self, build_fn: Callable, **kwargs):
         """
-        Build the model using the provided function and save its summary.
+        Initialize the random search object for hyperparameter tuning.
 
         Parameters
         ----------
@@ -132,23 +137,22 @@ class ModelWrapper:
 
         Notes
         -----
-        The model summary is saved to "artifacts/model_summaries/summary_{self.model_name}.png".
+        The random search object is saved to "artifacts/tuner_logs/{self.model_name}".
         """
 
-        print("Building model...")
-        self.model = build_fn(**kwargs)
-        print("Model built successfully!")
+        print("Removing previous random search results...")
+        shutil.rmtree(
+            f"{ARTIFACT_DIR}/tuner_logs/{self.model_name}", ignore_errors=True
+        )
 
-        print(
-            f"Saving model summary to {ARTIFACT_DIR}/model_summaries/summary_{self.model_name}..."
+        print("Initializing random search...")
+        self.tuner = RandomSearch(
+            build_fn,
+            objective="val_loss",
+            max_trials=10,
+            directory=f"{ARTIFACT_DIR}/tuner_logs",
+            project_name=self.model_name,
         )
-        keras.utils.plot_model(
-            self.model,
-            to_file=f"{ARTIFACT_DIR}/model_summaries/summary_{self.model_name}.png",
-            show_shapes=True,
-            show_layer_names=True,
-        )
-        print("Model summary saved successfully!")
 
     def __init_callbacks(self):
         """
@@ -169,7 +173,7 @@ class ModelWrapper:
         """
         early_stopping = keras.callbacks.EarlyStopping(monitor="val_loss", patience=30)
         checkpointer = keras.callbacks.ModelCheckpoint(
-            filepath=f"{ARTIFACT_DIR}/checkpoints/checkpoint_{self.model_name}",
+            filepath=f"{ARTIFACT_DIR}/checkpoints/checkpoint_{self.model_name}.h5",
             verbose=1,
             save_best_only=True,
         )
@@ -192,7 +196,7 @@ class ModelWrapper:
         callbacks: list[keras.callbacks.Callback] = [],
     ):
         """
-        Train the model and save the model and its training history.
+        Perform hyperparameter tuning, train the model and save it alongside its training history.
 
         Parameters
         ----------
@@ -205,11 +209,28 @@ class ModelWrapper:
 
         Notes
         -----
-        The model is saved to "artifacts/models/{self.model_name}.h5".
+        The model summary is saved to "artifacts/model_summaries/summary_{self.model_name}.png".
+        The model is saved to "artifacts/tuner_logs/{self.model_name}/best_model.h5".
         The history is saved to "artifacts/model_histories/history_{self.model_name}".
         """
 
         self.callbacks.extend(callbacks)
+
+        self.tuner.search(
+            self.preprocessing_utils.X_train,
+            self.preprocessing_utils.y_train,
+            validation_data=(
+                self.preprocessing_utils.X_val,
+                self.preprocessing_utils.y_val,
+            ),
+            epochs=epochs,
+            batch_size=batch_size,
+            callbacks=self.callbacks,
+        )
+
+        print("Training final model...")
+        best_hps = self.tuner.get_best_hyperparameters(num_trials=1)[0]
+        self.model = self.tuner.hypermodel.build(best_hps)  # type: ignore
 
         history = self.model.fit(
             self.preprocessing_utils.X_train,
@@ -222,6 +243,18 @@ class ModelWrapper:
             batch_size=batch_size,
             callbacks=self.callbacks,
         )
+        self.history = history.history
+
+        print(
+            f"Saving model summary to {ARTIFACT_DIR}/model_summaries/summary_{self.model_name}..."
+        )
+        keras.utils.plot_model(
+            self.model,
+            to_file=f"{ARTIFACT_DIR}/model_summaries/summary_{self.model_name}.png",
+            show_shapes=True,
+            show_layer_names=True,
+        )
+        print("Model summary saved successfully!")
 
         print(f'Saving model to "artifacts/models/{self.model_name}.h5"...')
         self.model.save(f"{ARTIFACT_DIR}/models/{self.model_name}.h5")
@@ -261,7 +294,7 @@ class ModelWrapper:
             path = (
                 f"{ARTIFACT_DIR}/model_histories/history_{self.model_name}"
                 if history_or_model == "history"
-                else f"{ARTIFACT_DIR}/models/{self.model_name}.h5"
+                else f"{ARTIFACT_DIR}/checkpoints/checkpoint_{self.model_name}.h5"
             )
 
         print(f'Loading {history_or_model} from "{path}"...')
